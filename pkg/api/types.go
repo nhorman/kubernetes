@@ -564,6 +564,24 @@ type PodTemplateList struct {
 	Items []PodTemplate `json:"items"`
 }
 
+// ExternalIPRequest is the specification of a request to translate and
+// forward an external address to a Pod
+type ExternalIPRequest struct {
+	TypeMeta `json:",inline"`
+	ObjectMeta `json:"metadata,omitempty"`
+	PodName    string `json:"podname"`
+	ExternalIP string `json:"externalip,omitempty"`
+	NodeId	   string `json:"nodeid,omitempty"`
+}
+
+// ExternalIPRequestList is a list of Pods.
+type ExternalIPRequestList struct {
+	TypeMeta `json:",inline"`
+	ListMeta `json:"metadata,omitempty"`
+
+	Items []ExternalIPRequest `json:"items"`
+}
+
 // ReplicationControllerSpec is the specification of a replication controller.
 // As the internal representation of a replication controller, it may have either
 // a TemplateRef or a Template set.
@@ -1197,6 +1215,7 @@ const (
 	ResourceReplicationControllers ResourceName = "replicationcontrollers"
 	// ResourceQuotas, number
 	ResourceQuotas ResourceName = "resourcequotas"
+	ResourceExternalIPRequests = "externalIPRequests"
 )
 
 // ResourceQuotaSpec defines the desired hard limits to enforce for Quota

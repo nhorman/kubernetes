@@ -223,6 +223,7 @@ var statusColumns = []string{"STATUS"}
 var eventColumns = []string{"TIME", "NAME", "KIND", "SUBOBJECT", "REASON", "SOURCE", "MESSAGE"}
 var limitRangeColumns = []string{"NAME"}
 var resourceQuotaColumns = []string{"NAME"}
+var externalIPRequests = []string{"NAME", "PODNAME", "EXTERNALIP", "NODE"}
 
 // addDefaultHandlers adds print handlers for default Kubernetes types.
 func (h *HumanReadablePrinter) addDefaultHandlers() {
@@ -241,6 +242,8 @@ func (h *HumanReadablePrinter) addDefaultHandlers() {
 	h.Handler(limitRangeColumns, printLimitRangeList)
 	h.Handler(resourceQuotaColumns, printResourceQuota)
 	h.Handler(resourceQuotaColumns, printResourceQuotaList)
+	h.Handler(externalIPRequests, printExternalIPRequest)
+	h.Handler(externalIPRequests, printExternalIPRequestList)
 }
 
 func (h *HumanReadablePrinter) unknown(data []byte, w io.Writer) error {
@@ -303,6 +306,24 @@ func printPodList(podList *api.PodList, w io.Writer) error {
 	return nil
 }
 
+func printExternalIPRequest(exip *api.ExternalIPRequest, w io.Writer) error {
+	_, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+		exip.Name, exip.PodName, exip.ExternalIP, exip.NodeId)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func printExternalIPRequestList(exips *api.ExternalIPRequestList, w io.Writer) error {
+	for _, exip := range exips.Items {
+		if err := printExternalIPRequest(&exip, w); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func printReplicationController(controller *api.ReplicationController, w io.Writer) error {
 	containers := controller.Spec.Template.Spec.Containers
 	var firstContainer api.Container

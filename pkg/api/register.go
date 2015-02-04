@@ -52,6 +52,8 @@ func init() {
 		&ResourceQuota{},
 		&ResourceQuotaList{},
 		&ResourceQuotaUsage{},
+		&ExternalIPRequestList{},
+		&ExternalIPRequest{},
 	)
 	// Legacy names are supported
 	Scheme.AddKnownTypeWithName("", "Minion", &Node{})
@@ -87,3 +89,6 @@ func (*LimitRangeList) IsAnAPIObject()            {}
 func (*ResourceQuota) IsAnAPIObject()             {}
 func (*ResourceQuotaList) IsAnAPIObject()         {}
 func (*ResourceQuotaUsage) IsAnAPIObject()        {}
+func (*ExternalIPRequestList) IsAnAPIObject()     {}
+func (*ExternalIPRequest) IsAnAPIObject()	  {}
+

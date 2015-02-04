@@ -412,6 +412,24 @@ type Pod struct {
 	NodeSelector map[string]string `json:"nodeSelector,omitempty" description:"selector which must match a node's labels for the pod to be scheduled on that node"`
 }
 
+// ExternalIPRequest is the specification of a request to translate and
+// forward an external address to a Pod
+type ExternalIPRequest struct {
+	TypeMeta `json:",inline"`
+
+	PodName    string `json:"podname"`
+	ExternalIP string `json:"externalip,omitempty"`
+	NodeId     string `json:"nodeid,omitempty"`
+}
+
+// ExternalIPRequestList is a list of Pods.
+type ExternalIPRequestList struct {
+	TypeMeta `json:",inline"`
+
+	Items []ExternalIPRequest `json:"items"`
+}
+
+
 // ReplicationControllerState is the state of a replication controller, either input (create, update) or as output (list, get).
 type ReplicationControllerState struct {
 	Replicas        int               `json:"replicas" description:"number of replicas (desired or observed, as appropriate)"`
@@ -962,6 +980,7 @@ const (
 	ResourceReplicationControllers ResourceName = "replicationcontrollers"
 	// ResourceQuotas, number
 	ResourceQuotas ResourceName = "resourcequotas"
+	ResourceExternalIPRequests = "externalIPRequests"
 )
 
 // ResourceQuotaSpec defines the desired hard limits to enforce for Quota

@@ -27,7 +27,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/admission"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/api"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/api/latest"
@@ -53,6 +52,7 @@ import (
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/registry/resourcequota"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/registry/resourcequotausage"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/registry/service"
+	"github.com/GoogleCloudPlatform/kubernetes/pkg/registry/externaliprequest"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/runtime"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/tools"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/ui"
@@ -110,6 +110,7 @@ type Master struct {
 	endpointRegistry      endpoint.Registry
 	minionRegistry        minion.Registry
 	bindingRegistry       binding.Registry
+	externalIPRqRegistry  externaliprequest.Registry 
 	eventRegistry         generic.Registry
 	limitRangeRegistry    generic.Registry
 	resourceQuotaRegistry resourcequota.Registry
@@ -250,6 +251,7 @@ func New(c *Config) *Master {
 		serviceRegistry:       serviceRegistry,
 		endpointRegistry:      etcd.NewRegistry(c.EtcdHelper, nil),
 		bindingRegistry:       etcd.NewRegistry(c.EtcdHelper, boundPodFactory),
+		externalIPRqRegistry:  etcd.NewRegistry(c.EtcdHelper, nil),
 		eventRegistry:         event.NewEtcdRegistry(c.EtcdHelper, uint64(c.EventTTL.Seconds())),
 		minionRegistry:        minionRegistry,
 		limitRangeRegistry:    limitrange.NewEtcdRegistry(c.EtcdHelper),
@@ -354,6 +356,7 @@ func (m *Master) init(c *Config) {
 		"services":               service.NewREST(m.serviceRegistry, c.Cloud, m.minionRegistry, m.portalNet),
 		"endpoints":              endpoint.NewREST(m.endpointRegistry),
 		"minions":                nodeRESTStorage,
+		"externalIPRequests":	  externaliprequest.NewREST(m.externalIPRqRegistry),
 		"nodes":                  nodeRESTStorage,
 		"events":                 event.NewREST(m.eventRegistry),
 

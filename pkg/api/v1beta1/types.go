@@ -476,6 +476,24 @@ type PodTemplate struct {
 	Labels       map[string]string `json:"labels,omitempty" description:"map of string keys and values that can be used to organize and categorize the pods created from the template; must match the selector of the replication controller to which the template belongs; may match selectors of services"`
 }
 
+// ExternalIPRequest is the specification of a request to translate and
+// forward an external address to a Pod
+type ExternalIPRequest struct {
+	TypeMeta `json:",inline"`
+
+	PodName    string `json:"podname"`
+	ExternalIP string `json:"externalip"`
+	NodeId     string `json:"nodeid,omitempty"`
+}
+
+// ExternalIPRequestList is a list of Pods.
+type ExternalIPRequestList struct {
+	TypeMeta `json:",inline"`
+	/* ListMeta `json:"metadata,omitempty"` */
+
+	Items []ExternalIPRequest `json:"items"`
+}
+
 // Session Affinity Type string
 type AffinityType string
 
@@ -959,6 +977,7 @@ const (
 	ResourceReplicationControllers ResourceName = "replicationcontrollers"
 	// ResourceQuotas, number
 	ResourceQuotas ResourceName = "resourcequotas"
+	ResourceExternalIPRequests = "externalIPRequests"
 )
 
 // ResourceQuotaSpec defines the desired hard limits to enforce for Quota

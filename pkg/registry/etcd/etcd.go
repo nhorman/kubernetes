@@ -44,6 +44,8 @@ const (
 	ServiceEndpointPath string = "/registry/services/endpoints"
 	// NodePath is the path to node resources in etcd
 	NodePath string = "/registry/minions"
+	// ExternalIPPath is the path to external ip requests
+	ExternalIPPath string = "/registry/externalIPRequests"
 )
 
 // TODO: Need to add a reconciler loop that makes sure that things in pods are reflected into
@@ -122,6 +124,36 @@ func (r *Registry) ListPodsPredicate(ctx api.Context, filter func(*api.Pod) bool
 	}
 	allPods.Items = filtered
 	return &allPods, nil
+}
+
+// makeExternalIPRequestListKey constructs etcd paths to pod directories enforcing namespace rules.
+func makeExternalIPRequestListKey(ctx api.Context) string {
+	return MakeEtcdListKey(ctx, ExternalIPPath)
+}
+
+// ListExternalIPRequests obtains a list of external ip requests with labels that match selector.
+func (r *Registry) ListExternalIpRequests(ctx api.Context, selector labels.Selector) (*api.ExternalIPRequestList, error) {
+	return r.ListExternalIpRequestsPredicate(ctx, func(exip *api.ExternalIPRequest) bool {
+		return selector.Matches(labels.Set(exip.Labels))
+	})
+}
+
+// ListExternalIPRequestsPredicate obtains a list of pods that match filter.
+func (r *Registry) ListExternalIpRequestsPredicate(ctx api.Context, filter func(*api.ExternalIPRequest) bool) (*api.ExternalIPRequestList, error) {
+	allexip := api.ExternalIPRequestList{}
+	key := makeExternalIPRequestListKey(ctx)
+	err := r.ExtractToList(key, &allexip)
+	if err != nil {
+		return nil, err
+	}
+	filtered := []api.ExternalIPRequest{}
+	for _, exip := range allexip.Items {
+		if filter(&exip) {
+			filtered = append(filtered, exip)
+		}
+	}
+	allexip.Items = filtered
+	return &allexip, nil
 }
 
 // WatchPods begins watching for new, changed, or deleted pods.
@@ -591,6 +623,14 @@ func makeNodeListKey() string {
 	return NodePath
 }
 
+func makeExternalIPListKey() string {
+	return ExternalIPPath
+}
+
+func makeExternalIPRequestKey(ctx api.Context, requestID string) (string, error) {
+	return MakeEtcdItemKey(ctx, ExternalIPPath, requestID)
+}
+
 func (r *Registry) ListMinions(ctx api.Context) (*api.NodeList, error) {
 	minions := &api.NodeList{}
 	err := r.ExtractToList(makeNodeListKey(), minions)
@@ -642,5 +682,55 @@ func (r *Registry) WatchMinions(ctx api.Context, label, field labels.Selector, r
 		}
 		// TODO: Add support for filtering based on field, once NodeStatus is defined.
 		return label.Matches(labels.Set(minionObj.Labels))
+	})
+}
+
+func (r *Registry) CreateExternalIPRequest(ctx api.Context, exip *api.ExternalIPRequest) error {
+	// TODO: Add some validations.
+	key,_ := makeExternalIPRequestKey(ctx, exip.Name)
+	err := r.CreateObj(key, exip, 0)
+	return etcderr.InterpretCreateError(err, "externalIPRequest", exip.Name)
+}
+
+func (r *Registry) UpdateExternalIPRequest(ctx api.Context, exip *api.ExternalIPRequest) error {
+	// TODO: Add some validations.
+	key,_ := makeExternalIPRequestKey(ctx, exip.Name)
+	err := r.SetObj(key, exip)
+	return etcderr.InterpretUpdateError(err, "externalIPRequest", exip.Name)
+}
+
+func (r *Registry) GetExternalIPRequest(ctx api.Context, requestID string) (*api.ExternalIPRequest, error) {
+	var exip api.ExternalIPRequest
+	key,_ := makeExternalIPRequestKey(ctx, requestID)
+	err := r.ExtractObj(key, &exip, false)
+	if err != nil {
+		return nil, etcderr.InterpretGetError(err, "externalIPRequest", requestID)
+	}
+	return &exip, nil
+}
+
+func (r *Registry) DeleteExternalIPRequest(ctx api.Context, requestID string) error {
+	key,_ := makeExternalIPRequestKey(ctx, requestID)
+	err := r.Delete(key, true)
+	if err != nil {
+		return etcderr.InterpretDeleteError(err, "extternaliprequest", requestID)
+	}
+	return nil
+}
+
+func (r *Registry) WatchExternalIPRequests(ctx api.Context, label, field labels.Selector, resourceVersion string) (watch.Interface, error) {
+	version, err := tools.ParseWatchResourceVersion(resourceVersion, "externalIPRequests")
+	if err != nil {
+		return nil, err
+	}
+	key := makeExternalIPListKey()
+	return r.WatchList(key, version, func(obj runtime.Object) bool {
+		exipObj, ok := obj.(*api.ExternalIPRequest)
+		if !ok {
+			// Must be an error: return true to propagate to upper level.
+			return true
+		}
+		// TODO: Add support for filtering based on field, once NodeStatus is defined.
+		return label.Matches(labels.Set(exipObj.Labels))
 	})
 }
